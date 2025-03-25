@@ -1,57 +1,58 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Role } from '../roles/entities/role.entity';
+import { In } from 'typeorm';
 @Injectable()
 export class UsersService {
+  constructor(
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(Role) private readonly roleRepository: Repository<Role>,
+  ) {}
   lastId: number = 1;
-  users: User[] = [
-    {
-      id: 1,
-      name: 'chanyut',
-      email: 'admin@gmail.com',
-      gender: 'male',
-      roles: ['admin'],
-      password: '@admin123',
-    },
-  ];
+  async create(createUserDto: CreateUserDto) {
+    const roles = await this.roleRepository.find({
+      where: {
+        id: In(createUserDto.roles.map((role) => role.id)),
+      },
+    });
 
-  create(createUserDto: CreateUserDto) {
-    this.lastId++;
-    const newUser = { ...createUserDto, id: this.lastId };
-    this.users.push(newUser);
-    return newUser;
+    const newUser = this.userRepository.create({
+      ...createUserDto,
+      roles,
+      id: this.lastId++,
+    });
+
+    return await this.userRepository.save(newUser);
+    //return await this.userRepository.save(createUserDto);
   }
 
-  findAll() {
-    return this.users;
+  async findAll() {
+    return await this.userRepository.find();
   }
 
-  findOne(id: number) {
-    const index = this.users.findIndex((user) => user.id === id);
-    if (index < 0) {
+  async findOne(id: number) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
       throw new NotFoundException();
     }
-    return this.users[index];
-  }
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    const index = this.users.findIndex((user) => user.id === id);
-    if (index < 0) {
-      throw new NotFoundException();
-    }
-    this.users[index] = { ...this.users[index], ...updateUserDto };
-    return this.users[index];
+    await this.userRepository.update(id, updateUserDto);
+    return user;
   }
 
   remove(id: number) {
-    const index = this.users.findIndex((user) => user.id === id);
-    if (index < 0) {
-      throw new NotFoundException();
-    }
-    const delUser = this.users[index];
-    this.users.splice(index, 1);
-    return delUser;
+    return this.userRepository.delete(id);
   }
 }
