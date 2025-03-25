@@ -1,7 +1,7 @@
 export class CreateUserDto {
-  login: string;
+  name: string;
+  email: string;
   password: string;
   roles: ('admin' | 'user')[];
   gender: 'male' | 'female';
-  age: number;
 }

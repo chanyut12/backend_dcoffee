@@ -1,8 +1,8 @@
 export class User {
   id: number;
-  login: string;
+  name: string;
+  email: string;
   password: string;
   roles: ('admin' | 'user')[];
   gender: 'male' | 'female';
-  age: number;
 }

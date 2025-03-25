@@ -9,13 +9,14 @@ export class UsersService {
   users: User[] = [
     {
       id: 1,
-      login: 'admin',
-      password: 'pass@1234',
-      roles: ['admin'],
+      name: 'chanyut',
+      email: 'admin@gmail.com',
       gender: 'male',
-      age: 50,
+      roles: ['admin'],
+      password: '@admin123',
     },
   ];
+
   create(createUserDto: CreateUserDto) {
     this.lastId++;
     const newUser = { ...createUserDto, id: this.lastId };
