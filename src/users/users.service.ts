@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -10,33 +9,43 @@ import { In } from 'typeorm';
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
-    @InjectRepository(Role) private readonly roleRepository: Repository<Role>,
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    @InjectRepository(Role) private readonly rolesRepository: Repository<Role>,
   ) {}
   lastId: number = 1;
   async create(createUserDto: CreateUserDto) {
-    const roles = await this.roleRepository.find({
+    const roles = await this.rolesRepository.find({
       where: {
         id: In(createUserDto.roles.map((role) => role.id)),
       },
     });
 
-    const newUser = this.userRepository.create({
+    const newUser = this.usersRepository.create({
       ...createUserDto,
       roles,
       id: this.lastId++,
     });
 
-    return await this.userRepository.save(newUser);
+    return await this.usersRepository.save(newUser);
     //return await this.userRepository.save(createUserDto);
   }
 
   async findAll() {
-    return await this.userRepository.find();
+    return await this.usersRepository.find();
+  }
+
+  async findOneByLogin(email: string): Promise<User> {
+    const user = await this.usersRepository.findOneOrFail({
+      where: { email },
+      select: ['id', 'email', 'password'],
+      relations: ['roles'],
+    });
+
+    return user;
   }
 
   async findOne(id: number) {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -44,15 +53,15 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException();
     }
-    await this.userRepository.update(id, updateUserDto);
+    await this.usersRepository.update(id, updateUserDto);
     return user;
   }
 
   remove(id: number) {
-    return this.userRepository.delete(id);
+    return this.usersRepository.delete(id);
   }
 }

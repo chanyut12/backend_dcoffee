@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
 import { DataSource } from 'typeorm';
+import { AuthModule } from './auth/auth.module';
 @Module({
   imports: [
     UsersModule,
@@ -17,6 +18,7 @@ import { DataSource } from 'typeorm';
       entities: [User, Role],
       synchronize: true,
     }),
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
