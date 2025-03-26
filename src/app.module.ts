@@ -10,6 +10,8 @@ import { DataSource } from 'typeorm';
 import { AuthModule } from './auth/auth.module';
 import { SalariesModule } from './salaries/salaries.module';
 import { Salary } from './salaries/entities/salary.entity';
+import { CategoriesModule } from './categories/categories.module';
+import { Category } from './categories/entities/category.entity';
 @Module({
   imports: [
     UsersModule,
@@ -17,11 +19,12 @@ import { Salary } from './salaries/entities/salary.entity';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-      entities: [User, Role, Salary],
+      entities: [User, Role, Salary, Category],
       synchronize: true,
     }),
     AuthModule,
     SalariesModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
