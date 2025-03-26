@@ -23,7 +23,7 @@ export class CreateUserDto {
   roles: Role[];
   @ApiProperty({
     description: 'The gender of the user',
-    example: 'male',
+    example: 'Male',
   })
   gender: 'Male' | 'Female';
 }
