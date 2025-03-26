@@ -61,14 +61,35 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
+    // Find the user with roles relation
     const user = await this.usersRepository.findOne({
       where: { id },
       relations: ['roles'],
     });
+
+    // If user doesn't exist, throw NotFoundException
     if (!user) {
-      throw new NotFoundException();
+      throw new NotFoundException('User not found');
     }
-    await this.usersRepository.update(id, updateUserDto);
+
+    // Handle roles separately: map the role IDs to role entities
+    if (updateUserDto.roles) {
+      const roles = await this.rolesRepository.find({
+        where: {
+          id: In(updateUserDto.roles.map((role) => role.id)),
+        },
+      });
+
+      // Update the user roles with the fetched roles
+      user.roles = roles;
+    }
+
+    // Merge the rest of the updated properties
+    Object.assign(user, updateUserDto);
+
+    // Save the updated user
+    await this.usersRepository.save(user);
+
     return user;
   }
 
