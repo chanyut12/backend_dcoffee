@@ -14,6 +14,8 @@ import { CategoriesModule } from './categories/categories.module';
 import { Category } from './categories/entities/category.entity';
 import { TypesModule } from './types/types.module';
 import { Type } from './types/entities/type.entity';
+import { InventoryItemsModule } from './inventory-items/inventory-items.module';
+import { InventoryItem } from './inventory-items/entities/inventory-item.entity';
 @Module({
   imports: [
     UsersModule,
@@ -21,13 +23,14 @@ import { Type } from './types/entities/type.entity';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-      entities: [User, Role, Salary, Category, Type],
+      entities: [User, Role, Salary, Category, Type, InventoryItem],
       synchronize: true,
     }),
     AuthModule,
     SalariesModule,
     CategoriesModule,
     TypesModule,
+    InventoryItemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
