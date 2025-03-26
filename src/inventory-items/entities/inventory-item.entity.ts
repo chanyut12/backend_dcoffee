@@ -1,5 +1,12 @@
 import { Category } from 'src/categories/entities/category.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { StockcheckDetail } from 'src/stockcheck-detail/entities/stockcheck-detail.entity';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class InventoryItem {
@@ -31,4 +38,10 @@ export class InventoryItem {
 
   @Column()
   lastOrder: string;
+
+  @OneToMany(
+    () => StockcheckDetail,
+    (StockcheckDetail) => StockcheckDetail.inventoryitem,
+  )
+  stockCheckDetails: StockcheckDetail[];
 }

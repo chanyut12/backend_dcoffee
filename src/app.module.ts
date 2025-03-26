@@ -16,6 +16,9 @@ import { TypesModule } from './types/types.module';
 import { Type } from './types/entities/type.entity';
 import { InventoryItemsModule } from './inventory-items/inventory-items.module';
 import { InventoryItem } from './inventory-items/entities/inventory-item.entity';
+import { StockcheckRecordModule } from './stockcheck-record/stockcheck-record.module';
+import { StockcheckDetailModule } from './stockcheck-detail/stockcheck-detail.module';
+import { StockcheckDetail } from './stockcheck-detail/entities/stockcheck-detail.entity';
 @Module({
   imports: [
     UsersModule,
@@ -23,7 +26,15 @@ import { InventoryItem } from './inventory-items/entities/inventory-item.entity'
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-      entities: [User, Role, Salary, Category, Type, InventoryItem],
+      entities: [
+        User,
+        Role,
+        Salary,
+        Category,
+        Type,
+        InventoryItem,
+        StockcheckDetail,
+      ],
       synchronize: true,
     }),
     AuthModule,
@@ -31,6 +42,8 @@ import { InventoryItem } from './inventory-items/entities/inventory-item.entity'
     CategoriesModule,
     TypesModule,
     InventoryItemsModule,
+    StockcheckRecordModule,
+    StockcheckDetailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
