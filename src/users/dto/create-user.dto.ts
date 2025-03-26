@@ -25,5 +25,5 @@ export class CreateUserDto {
     description: 'The gender of the user',
     example: 'male',
   })
-  gender: 'male' | 'female';
+  gender: 'Male' | 'Female';
 }

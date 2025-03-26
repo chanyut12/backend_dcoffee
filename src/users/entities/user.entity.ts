@@ -17,8 +17,8 @@ export class User {
   @Column()
   password: string;
   @Column()
-  gender: 'male' | 'female';
-  @ManyToMany(() => Role, (role) => role.users)
+  gender: 'Male' | 'Female';
+  @ManyToMany(() => Role, (role) => role.users, { cascade: true })
   @JoinTable()
   roles: Role[];
 }
