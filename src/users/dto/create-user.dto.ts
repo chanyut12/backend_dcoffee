@@ -3,12 +3,12 @@ import { Role } from '../../roles/entities/role.entity';
 export class CreateUserDto {
   @ApiProperty({
     description: 'The name of the user',
-    example: 'John Doe',
+    example: 'chan',
   })
   name: string;
   @ApiProperty({
     description: 'The email of the user',
-    example: 'john.doe@example.com',
+    example: 'chan@gmail.com',
   })
   email: string;
   @ApiProperty({
@@ -18,7 +18,7 @@ export class CreateUserDto {
   password: string;
   @ApiProperty({
     description: 'The roles of the user',
-    example: ['admin', 'user'],
+    example: [{ id: 1 }, { id: 2 }],
   })
   roles: Role[];
   @ApiProperty({

@@ -12,7 +12,6 @@ export class UsersService {
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     @InjectRepository(Role) private readonly rolesRepository: Repository<Role>,
   ) {}
-  lastId: number = 1;
   async create(createUserDto: CreateUserDto) {
     const roles = await this.rolesRepository.find({
       where: {
@@ -23,7 +22,6 @@ export class UsersService {
     const newUser = this.usersRepository.create({
       ...createUserDto,
       roles,
-      id: this.lastId++,
     });
 
     return await this.usersRepository.save(newUser);
