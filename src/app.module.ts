@@ -8,6 +8,8 @@ import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
 import { DataSource } from 'typeorm';
 import { AuthModule } from './auth/auth.module';
+import { SalariesModule } from './salaries/salaries.module';
+import { Salary } from './salaries/entities/salary.entity';
 @Module({
   imports: [
     UsersModule,
@@ -15,10 +17,11 @@ import { AuthModule } from './auth/auth.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-      entities: [User, Role],
+      entities: [User, Role, Salary],
       synchronize: true,
     }),
     AuthModule,
+    SalariesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
