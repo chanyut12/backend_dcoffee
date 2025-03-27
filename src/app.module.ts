@@ -21,8 +21,22 @@ import { StockcheckDetailModule } from './stockcheck-detail/stockcheck-detail.mo
 import { StockcheckDetail } from './stockcheck-detail/entities/stockcheck-detail.entity';
 import { OrderDetailModule } from './order-detail/order-detail.module';
 import { OrderDetail } from './order-detail/entities/order-detail.entity';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { ConfigModule } from '@nestjs/config';
+import { join } from 'path';
+import { ProductsModule } from './products/products.module';
+import { Product } from './products/entities/product.entity';
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads/products'),
+      serveRoot: '/product-images',
+    }),
     UsersModule,
     RolesModule,
     TypeOrmModule.forRoot({
@@ -37,6 +51,7 @@ import { OrderDetail } from './order-detail/entities/order-detail.entity';
         InventoryItem,
         StockcheckDetail,
         OrderDetail,
+        Product,
       ],
       synchronize: true,
     }),
@@ -48,10 +63,11 @@ import { OrderDetail } from './order-detail/entities/order-detail.entity';
     StockcheckRecordModule,
     StockcheckDetailModule,
     OrderDetailModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {
-  constructor(private dataSource: DataSource) { }
+  constructor(private dataSource: DataSource) {}
 }

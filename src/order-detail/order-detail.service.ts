@@ -14,7 +14,7 @@ export class OrderDetailService {
 
     @InjectRepository(InventoryItem)
     private inventoryItemRepository: Repository<InventoryItem>, // inject InventoryItem repository
-  ) { }
+  ) {}
 
   // ฟังก์ชันนี้จะเพิ่มข้อมูลคำสั่งซื้อใหม่
   async create(orderDetailData: any) {
@@ -51,7 +51,7 @@ export class OrderDetailService {
     // สร้างหรือบันทึกคำสั่งซื้อใน order_detail
     const newOrderDetail = this.orderDetailRepository.create({
       ...orderDetailData,
-      inventoryItem,  // ใส่ความสัมพันธ์กับ inventoryItem
+      inventoryItem, // ใส่ความสัมพันธ์กับ inventoryItem
     });
     return this.orderDetailRepository.save(newOrderDetail);
   }

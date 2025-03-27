@@ -11,4 +11,4 @@ import { OrderDetail } from 'src/order-detail/entities/order-detail.entity';
   providers: [InventoryItemsService],
   exports: [InventoryItemsService],
 })
-export class InventoryItemsModule { }
+export class InventoryItemsModule {}
