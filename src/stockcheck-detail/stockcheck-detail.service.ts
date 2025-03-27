@@ -16,6 +16,14 @@ export class StockcheckDetailService {
     private inventoryItemRepository: Repository<InventoryItem>,
   ) {}
 
+  // คำนวณสถานะว่าเป็น 'normal' หรือ 'warning' ขึ้นอยู่กับ quantity และ minStock
+  private calculateStatus(quantity: number, minStock: number): string {
+    if (quantity <= minStock) {
+      return 'warning'; // ถ้า quantity น้อยกว่าหรือเท่ากับ minStock จะให้สถานะเป็น 'warning'
+    }
+    return 'normal'; // ถ้ามากกว่าก็จะเป็น 'normal'
+  }
+
   async create(
     createStockcheckDetailDto: CreateStockCheckDetailDto,
   ): Promise<StockcheckDetail> {
@@ -28,19 +36,29 @@ export class StockcheckDetailService {
     if (!product) {
       throw new NotFoundException('Product not found');
     }
-
+    const productName = product.name;
     // ใช้ quantity ของ InventoryItem เป็น previousQuantity
     const previousQuantity = product.quantity;
 
+    const minStock = product.minStock;
+
     // คำนวณ difference จาก previousQuantity และ newQuantity
     const difference = previousQuantity - createStockcheckDetailDto.newQuantity;
+
+    // คำนวณ status จาก quantity และ minStock
+    const status = this.calculateStatus(previousQuantity, minStock);
+
+    const unit = product.unit;
 
     // สร้าง StockCheckDetail ใหม่
     const stockCheckDetail = this.stockCheckDetailRepository.create({
       ...createStockcheckDetailDto, // ใช้ข้อมูลจาก DTO
       inventoryitem: product, // เชื่อมโยงกับ InventoryItem
       previousQuantity: previousQuantity, // ใช้ quantity ของ InventoryItem เป็น previousQuantity
-      difference, // บันทึกผลต่าง
+      difference: difference, // บันทึกผลต่าง
+      productName: productName,
+      unit: unit,
+      status: status,
     });
 
     // บันทึกข้อมูลในฐานข้อมูล
@@ -49,6 +67,7 @@ export class StockcheckDetailService {
 
     // อัปเดต InventoryItem quantity เป็น newQuantity
     product.quantity = createStockcheckDetailDto.newQuantity;
+    stockCheckDetail.status = this.calculateStatus(product.quantity, minStock);
     await this.inventoryItemRepository.save(product); // บันทึกข้อมูลใหม่ของ InventoryItem
 
     return savedStockCheckDetail;
