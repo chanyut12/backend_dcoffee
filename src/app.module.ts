@@ -19,6 +19,8 @@ import { InventoryItem } from './inventory-items/entities/inventory-item.entity'
 import { StockcheckRecordModule } from './stockcheck-record/stockcheck-record.module';
 import { StockcheckDetailModule } from './stockcheck-detail/stockcheck-detail.module';
 import { StockcheckDetail } from './stockcheck-detail/entities/stockcheck-detail.entity';
+import { OrderDetailModule } from './order-detail/order-detail.module';
+import { OrderDetail } from './order-detail/entities/order-detail.entity';
 @Module({
   imports: [
     UsersModule,
@@ -34,6 +36,7 @@ import { StockcheckDetail } from './stockcheck-detail/entities/stockcheck-detail
         Type,
         InventoryItem,
         StockcheckDetail,
+        OrderDetail,
       ],
       synchronize: true,
     }),
@@ -44,10 +47,11 @@ import { StockcheckDetail } from './stockcheck-detail/entities/stockcheck-detail
     InventoryItemsModule,
     StockcheckRecordModule,
     StockcheckDetailModule,
+    OrderDetailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {
-  constructor(private dataSource: DataSource) {}
+  constructor(private dataSource: DataSource) { }
 }
