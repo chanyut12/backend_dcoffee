@@ -26,6 +26,9 @@ import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
 import { ProductsModule } from './products/products.module';
 import { Product } from './products/entities/product.entity';
+import { OrderRecordModule } from './order-record/order-record.module';
+import { StockcheckRecord } from './stockcheck-record/entities/stockcheck-record.entity';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -50,6 +53,7 @@ import { Product } from './products/entities/product.entity';
         Type,
         InventoryItem,
         StockcheckDetail,
+        StockcheckRecord,
         OrderDetail,
         Product,
       ],
@@ -64,6 +68,7 @@ import { Product } from './products/entities/product.entity';
     StockcheckDetailModule,
     OrderDetailModule,
     ProductsModule,
+    OrderRecordModule,
   ],
   controllers: [AppController],
   providers: [AppService],

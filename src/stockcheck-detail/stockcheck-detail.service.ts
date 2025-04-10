@@ -26,51 +26,66 @@ export class StockcheckDetailService {
 
   async create(
     createStockcheckDetailDto: CreateStockCheckDetailDto,
-  ): Promise<StockcheckDetail> {
-    // ดึงข้อมูล InventoryItem จากฐานข้อมูลโดยใช้ id ที่มาจาก object inventoryitem
-    const product = await this.inventoryItemRepository.findOne({
-      where: { id: createStockcheckDetailDto.inventoryitem.id },
-    });
-
-    // ถ้าไม่พบสินค้าให้โยน NotFoundException
-    if (!product) {
-      throw new NotFoundException('Product not found');
+  ): Promise<StockcheckDetail[]> {
+    const createdDetails: StockcheckDetail[] = [];
+    // First validate that all inventoryItemIds exist
+    for (const item of createStockcheckDetailDto.items) {
+      const product = await this.inventoryItemRepository.findOne({
+        where: { id: item.inventoryItemId },
+      });
+      if (!product) {
+        throw new NotFoundException(
+          `Product with id ${item.inventoryItemId} not found. All products must exist to proceed.`,
+        );
+      }
     }
-    const productName = product.name;
-    // ใช้ quantity ของ InventoryItem เป็น previousQuantity
-    const previousQuantity = product.quantity;
 
-    const minStock = product.minStock;
+    // If all items exist, proceed with creating the stock check details
+    for (const item of createStockcheckDetailDto.items) {
+      // Since we already verified existence, we can safely get the product
+      const product = await this.inventoryItemRepository.findOne({
+        where: { id: item.inventoryItemId },
+      });
 
-    // คำนวณ difference จาก previousQuantity และ newQuantity
-    const difference = previousQuantity - createStockcheckDetailDto.newQuantity;
+      // Since we already checked that all products exist, this should never be null
+      // but TypeScript doesn't know that, so we'll add a safety check
+      if (!product) {
+        continue; // Skip this item if product is somehow null
+      }
 
-    // คำนวณ status จาก quantity และ minStock
-    const status = this.calculateStatus(previousQuantity, minStock);
+      const productName = product.name;
+      const previousQuantity = product.quantity;
+      const minStock = product.minStock;
+      const unit = product.unit;
 
-    const unit = product.unit;
+      // คำนวณ difference จาก previousQuantity และ newQuantity
+      const difference = previousQuantity - item.newQuantity;
 
-    // สร้าง StockCheckDetail ใหม่
-    const stockCheckDetail = this.stockCheckDetailRepository.create({
-      ...createStockcheckDetailDto, // ใช้ข้อมูลจาก DTO
-      inventoryitem: product, // เชื่อมโยงกับ InventoryItem
-      previousQuantity: previousQuantity, // ใช้ quantity ของ InventoryItem เป็น previousQuantity
-      difference: difference, // บันทึกผลต่าง
-      productName: productName,
-      unit: unit,
-      status: status,
-    });
+      // คำนวณ status จาก quantity และ minStock
+      const status = this.calculateStatus(item.newQuantity, minStock);
 
-    // บันทึกข้อมูลในฐานข้อมูล
-    const savedStockCheckDetail =
-      await this.stockCheckDetailRepository.save(stockCheckDetail);
+      // สร้าง StockCheckDetail ใหม่
+      const stockCheckDetail = this.stockCheckDetailRepository.create({
+        inventoryitem: product,
+        previousQuantity,
+        newQuantity: item.newQuantity,
+        difference,
+        productName,
+        unit,
+        status,
+      });
 
-    // อัปเดต InventoryItem quantity เป็น newQuantity
-    product.quantity = createStockcheckDetailDto.newQuantity;
-    stockCheckDetail.status = this.calculateStatus(product.quantity, minStock);
-    await this.inventoryItemRepository.save(product); // บันทึกข้อมูลใหม่ของ InventoryItem
+      // บันทึกข้อมูลในฐานข้อมูล
+      const savedStockCheckDetail =
+        await this.stockCheckDetailRepository.save(stockCheckDetail);
+      createdDetails.push(savedStockCheckDetail);
 
-    return savedStockCheckDetail;
+      // อัปเดต InventoryItem quantity เป็น newQuantity
+      product.quantity = item.newQuantity;
+      await this.inventoryItemRepository.save(product);
+    }
+
+    return createdDetails;
   }
 
   async update(

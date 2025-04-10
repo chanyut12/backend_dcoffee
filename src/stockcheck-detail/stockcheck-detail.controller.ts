@@ -10,6 +10,8 @@ import {
 import { StockcheckDetailService } from './stockcheck-detail.service';
 import { CreateStockCheckDetailDto } from './dto/create-stockcheck-detail.dto';
 import { UpdateStockcheckDetailDto } from './dto/update-stockcheck-detail.dto';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { StockcheckDetail } from './entities/stockcheck-detail.entity';
 
 @Controller('stockcheck-detail')
 export class StockcheckDetailController {
@@ -18,6 +20,12 @@ export class StockcheckDetailController {
   ) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a new stock check detail' })
+  @ApiResponse({
+    status: 201,
+    description: 'The stock check detail has been successfully created.',
+    type: StockcheckDetail,
+  })
   create(@Body() createStockcheckDetailDto: CreateStockCheckDetailDto) {
     return this.stockcheckDetailService.create(createStockcheckDetailDto);
   }

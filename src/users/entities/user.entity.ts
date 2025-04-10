@@ -3,9 +3,11 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
+import { StockcheckRecord } from 'src/stockcheck-record/entities/stockcheck-record.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -26,4 +28,10 @@ export class User {
   @ManyToMany(() => Role, (role) => role.users, { cascade: true })
   @JoinTable()
   roles: Role[];
+
+  @OneToMany(
+    () => StockcheckRecord,
+    (stockcheckRecord) => stockcheckRecord.user,
+  )
+  stockcheckRecords: StockcheckRecord[];
 }
