@@ -195,162 +195,174 @@ export class UsageRecordService {
 
       // Update details if provided
       if (details && details.length > 0) {
-        // เก็บรายการเดิมเพื่อคืนจำนวนสินค้า
+        // คัดลอกรายการเดิมเพื่อใช้ในการอ้างอิง
         const oldDetails = [...usageRecord.details];
 
-        // ลบรายการเดิมทั้งหมด
+        // สร้าง Map ของ details เดิมโดยใช้ inventoryItemId เป็น key
+        const oldDetailsMap = new Map<number, UsageDetail>();
         for (const detail of oldDetails) {
-          await queryRunner.manager.remove(detail);
+          if (detail.inventoryItem) {
+            oldDetailsMap.set(detail.inventoryItem.id, detail);
+          }
         }
 
-        // คืนจำนวนสินค้าเดิม
+        // สร้าง Map สำหรับเก็บข้อมูล inventoryItems ที่ต้องอัพเดต
         const updatedInventoryItems = new Map<number, InventoryItem>();
 
+        // สร้างรายการ inventoryItemId ที่มีในข้อมูลใหม่
+        const newInventoryItemIds = details
+          .map((d) => d.inventoryItemId)
+          .filter((id) => id !== undefined);
+
+        // คืนสต็อกสำหรับรายการที่จะถูกลบหรืออัพเดต
         for (const detail of oldDetails) {
           if (detail.inventoryItem) {
             const inventoryItemId = detail.inventoryItem.id;
-            let inventoryItem: InventoryItem;
 
-            if (updatedInventoryItems.has(inventoryItemId)) {
-              inventoryItem = updatedInventoryItems.get(inventoryItemId)!;
-            } else {
-              const foundItem = await this.inventoryItemRepository.findOne({
-                where: { id: inventoryItemId },
-              });
+            // ถ้ารายการนี้มีอยู่ในข้อมูลใหม่ หรือจะถูกลบ ให้คืนสต็อก
+            if (
+              newInventoryItemIds.includes(inventoryItemId) ||
+              !newInventoryItemIds.length
+            ) {
+              let inventoryItem: InventoryItem;
 
-              if (!foundItem) {
-                continue;
+              if (updatedInventoryItems.has(inventoryItemId)) {
+                inventoryItem = updatedInventoryItems.get(inventoryItemId)!;
+              } else {
+                const foundItem = await this.inventoryItemRepository.findOne({
+                  where: { id: inventoryItemId },
+                });
+
+                if (!foundItem) {
+                  continue;
+                }
+
+                inventoryItem = foundItem;
               }
 
-              inventoryItem = foundItem;
-            }
+              // คืนจำนวนสินค้าเดิม
+              inventoryItem.quantity += detail.quantityUsed;
+              await queryRunner.manager.save(inventoryItem);
+              updatedInventoryItems.set(inventoryItemId, inventoryItem);
 
-            // คืนจำนวนสินค้าเดิม
-            inventoryItem.quantity += detail.quantityUsed;
-            await queryRunner.manager.save(inventoryItem);
-            updatedInventoryItems.set(inventoryItemId, inventoryItem);
+              // ลบรายการที่จะถูกอัพเดต
+              await queryRunner.manager.remove(detail);
+            }
           }
         }
 
-        // ตรวจสอบว่าสินค้ามีจำนวนพอสำหรับการใช้ใหม่หรือไม่
-        for (const detailDto of details) {
-          if (detailDto.inventoryItemId) {
-            let inventoryItem: InventoryItem;
+        // ถ้าไม่มีข้อมูลใหม่ส่งมา (details เป็น array ว่าง) ให้ลบข้อมูลเดิมทั้งหมด
+        if (newInventoryItemIds.length === 0) {
+          for (const detail of oldDetails) {
+            if (!detail.inventoryItem) {
+              await queryRunner.manager.remove(detail);
+            }
+          }
+          usageRecord.details = [];
+        } else {
+          // สร้างรายการใหม่
+          const newDetails: UsageDetail[] = [];
 
-            if (updatedInventoryItems.has(detailDto.inventoryItemId)) {
-              inventoryItem = updatedInventoryItems.get(
-                detailDto.inventoryItemId,
-              )!;
-            } else {
-              const foundItem = await this.inventoryItemRepository.findOne({
-                where: { id: detailDto.inventoryItemId },
-              });
+          // Process new details
+          for (const detailDto of details) {
+            // Validate inventoryItemId
+            if (!detailDto.inventoryItemId) {
+              throw new BadRequestException(
+                'Inventory item ID is required for usage detail',
+              );
+            }
 
-              if (!foundItem) {
-                throw new NotFoundException(
-                  `Inventory item with ID ${detailDto.inventoryItemId} not found`,
+            // Validate quantityUsed
+            if (!detailDto.quantityUsed || detailDto.quantityUsed <= 0) {
+              throw new BadRequestException(
+                'Quantity used must be greater than 0',
+              );
+            }
+
+            // สร้างรายการ
+            const usageDetail = this.usageDetailRepository.create(detailDto);
+
+            // เชื่อมโยงกับ usage record
+            usageDetail.usageRecord = usageRecord;
+
+            // ถ้ามี inventoryItemId ให้เชื่อมโยงกับ inventory item
+            if (detailDto.inventoryItemId) {
+              let inventoryItem: InventoryItem;
+
+              if (updatedInventoryItems.has(detailDto.inventoryItemId)) {
+                inventoryItem = updatedInventoryItems.get(
+                  detailDto.inventoryItemId,
+                )!;
+              } else {
+                const foundItem = await this.inventoryItemRepository.findOne({
+                  where: { id: detailDto.inventoryItemId },
+                });
+
+                if (!foundItem) {
+                  throw new NotFoundException(
+                    `Inventory item with ID ${detailDto.inventoryItemId} not found`,
+                  );
+                }
+
+                inventoryItem = foundItem;
+                updatedInventoryItems.set(
+                  detailDto.inventoryItemId,
+                  inventoryItem,
                 );
               }
 
-              inventoryItem = foundItem;
-            }
-
-            // ตรวจสอบว่ามีจำนวนพอให้ใช้หรือไม่
-            if (
-              detailDto.quantityUsed !== undefined &&
-              inventoryItem.quantity < detailDto.quantityUsed
-            ) {
-              throw new BadRequestException(
-                `Not enough quantity for item ${inventoryItem.name}. Available: ${inventoryItem.quantity}, Requested: ${detailDto.quantityUsed}`,
-              );
-            }
-          }
-        }
-
-        // สร้างรายการใหม่
-        const newDetails: UsageDetail[] = [];
-
-        for (const detailDto of details) {
-          // Validate inventoryItemId (เพิ่มการตรวจสอบว่าต้องมี inventoryItemId)
-          if (!detailDto.inventoryItemId) {
-            throw new BadRequestException(
-              'Inventory item ID is required for usage detail',
-            );
-          }
-
-          // Validate quantityUsed
-          if (!detailDto.quantityUsed || detailDto.quantityUsed <= 0) {
-            throw new BadRequestException(
-              'Quantity used must be greater than 0',
-            );
-          }
-
-          // สร้างรายการ
-          const usageDetail = this.usageDetailRepository.create(detailDto);
-
-          // เชื่อมโยงกับ usage record
-          usageDetail.usageRecord = usageRecord;
-
-          // ถ้ามี inventoryItemId ให้เชื่อมโยงกับ inventory item
-          if (detailDto.inventoryItemId) {
-            let inventoryItem: InventoryItem;
-
-            if (updatedInventoryItems.has(detailDto.inventoryItemId)) {
-              inventoryItem = updatedInventoryItems.get(
-                detailDto.inventoryItemId,
-              )!;
-            } else {
-              const foundItem = await this.inventoryItemRepository.findOne({
-                where: { id: detailDto.inventoryItemId },
-              });
-
-              if (!foundItem) {
-                throw new NotFoundException(
-                  `Inventory item with ID ${detailDto.inventoryItemId} not found`,
+              // Check if productName matches inventory item's name
+              if (
+                detailDto.productName &&
+                detailDto.productName !== inventoryItem.name
+              ) {
+                throw new BadRequestException(
+                  `Product name "${detailDto.productName}" does not match inventory item's name "${inventoryItem.name}"`,
                 );
               }
 
-              inventoryItem = foundItem;
-              updatedInventoryItems.set(
-                detailDto.inventoryItemId,
-                inventoryItem,
-              );
+              // Check if unit matches inventory item's unit
+              if (detailDto.unit && detailDto.unit !== inventoryItem.unit) {
+                throw new BadRequestException(
+                  `Unit "${detailDto.unit}" does not match inventory item's unit "${inventoryItem.unit}"`,
+                );
+              }
+
+              usageDetail.inventoryItem = inventoryItem;
+              usageDetail.productName = inventoryItem.name;
+              usageDetail.unit = inventoryItem.unit;
+
+              // ตรวจสอบว่ามีจำนวนพอให้ใช้หรือไม่
+              if (inventoryItem.quantity < detailDto.quantityUsed) {
+                throw new BadRequestException(
+                  `Not enough quantity for item ${inventoryItem.name}. Available: ${inventoryItem.quantity}, Requested: ${detailDto.quantityUsed}`,
+                );
+              }
+
+              // ลดจำนวนสินค้า
+              inventoryItem.quantity -= detailDto.quantityUsed;
+              await queryRunner.manager.save(inventoryItem);
+              updatedInventoryItems.set(inventoryItem.id, inventoryItem);
             }
 
-            // Check if productName matches inventory item's name
-            if (
-              detailDto.productName &&
-              detailDto.productName !== inventoryItem.name
-            ) {
-              throw new BadRequestException(
-                `Product name "${detailDto.productName}" does not match inventory item's name "${inventoryItem.name}"`,
-              );
-            }
-
-            // Check if unit matches inventory item's unit
-            if (detailDto.unit && detailDto.unit !== inventoryItem.unit) {
-              throw new BadRequestException(
-                `Unit "${detailDto.unit}" does not match inventory item's unit "${inventoryItem.unit}"`,
-              );
-            }
-
-            usageDetail.inventoryItem = inventoryItem;
-            usageDetail.productName = inventoryItem.name;
-            usageDetail.unit = inventoryItem.unit;
-
-            // ลดจำนวนสินค้า
-            inventoryItem.quantity -= detailDto.quantityUsed;
-            await queryRunner.manager.save(inventoryItem);
-            updatedInventoryItems.set(inventoryItem.id, inventoryItem);
+            // บันทึกรายการ
+            const savedDetail = await queryRunner.manager.save(usageDetail);
+            newDetails.push(savedDetail);
           }
 
-          // บันทึกรายการ
-          const savedDetail = await queryRunner.manager.save(usageDetail);
-          newDetails.push(savedDetail);
-        }
+          // เก็บรายการที่เหลือจากข้อมูลเดิม (ที่ไม่ถูกอัพเดต)
+          for (const detail of oldDetails) {
+            if (
+              detail.inventoryItem &&
+              !newInventoryItemIds.includes(detail.inventoryItem.id)
+            ) {
+              newDetails.push(detail);
+            }
+          }
 
-        // อัปเดตรายการใน usage record
-        usageRecord.details = newDetails;
+          // อัปเดตรายการใน usage record
+          usageRecord.details = newDetails;
+        }
       }
 
       // คำนวณยอดรวม
