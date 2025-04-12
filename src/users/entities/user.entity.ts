@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
 import { StockcheckRecord } from 'src/stockcheck-record/entities/stockcheck-record.entity';
+import { OrderRecord } from 'src/order-record/entities/order-record.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -34,4 +35,7 @@ export class User {
     (stockcheckRecord) => stockcheckRecord.user,
   )
   stockcheckRecords: StockcheckRecord[];
+
+  @OneToMany(() => OrderRecord, (orderRecord) => orderRecord.user)
+  orderRecords: OrderRecord[];
 }

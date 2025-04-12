@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateOrderDetailDto } from './dto/create-order-detail.dto';
 import { InventoryItem } from 'src/inventory-items/entities/inventory-item.entity';
+import { CartItem } from 'src/cart-item/entities/cart-item.entity';
 
 @Injectable()
 export class OrderDetailService {
@@ -17,8 +18,29 @@ export class OrderDetailService {
   ) {}
 
   // ฟังก์ชันนี้จะเพิ่มข้อมูลคำสั่งซื้อใหม่
-  async create(orderDetailData: any) {
-    const newOrderDetail = this.orderDetailRepository.create(orderDetailData);
+  async create(
+    createOrderDetailDto: CreateOrderDetailDto,
+  ): Promise<OrderDetail> {
+    const newOrderDetail =
+      this.orderDetailRepository.create(createOrderDetailDto);
+
+    if (createOrderDetailDto.inventoryItemId) {
+      const inventoryItem = await this.inventoryItemRepository.findOne({
+        where: { id: createOrderDetailDto.inventoryItemId },
+      });
+
+      if (!inventoryItem) {
+        throw new NotFoundException(
+          `Inventory item with ID ${createOrderDetailDto.inventoryItemId} not found`,
+        );
+      }
+
+      newOrderDetail.inventoryItem = inventoryItem;
+    }
+
+    // Calculate total price
+    newOrderDetail.calculateTotalPrice();
+
     return this.orderDetailRepository.save(newOrderDetail);
   }
 
@@ -56,22 +78,86 @@ export class OrderDetailService {
     return this.orderDetailRepository.save(newOrderDetail);
   }
 
-  findAll() {
-    return this.orderDetailRepository.find();
+  async createFromCartItem(cartItem: CartItem): Promise<OrderDetail> {
+    const inventoryItem = await this.inventoryItemRepository.findOne({
+      where: { id: cartItem.id },
+    });
+
+    if (!inventoryItem) {
+      throw new NotFoundException(
+        `Inventory item with ID ${cartItem.id} not found`,
+      );
+    }
+
+    const orderDetail = this.orderDetailRepository.create({
+      name: cartItem.name,
+      quantity: cartItem.orderQuantity,
+      unit: cartItem.unit,
+      price: cartItem.price,
+      supplier: cartItem.supplier,
+      inventoryItem: inventoryItem,
+    });
+
+    // Calculate total price
+    orderDetail.calculateTotalPrice();
+
+    return orderDetail;
   }
 
-  async update(id: number, updateOrderDetailDto: UpdateOrderDetailDto) {
+  async findAll(): Promise<OrderDetail[]> {
+    return this.orderDetailRepository.find({
+      relations: ['inventoryItem'],
+    });
+  }
+
+  async findOne(id: number): Promise<OrderDetail> {
     const orderDetail = await this.orderDetailRepository.findOne({
       where: { id },
+      relations: ['inventoryItem'],
     });
+
     if (!orderDetail) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException(`Order detail with ID ${id} not found`);
     }
+
+    return orderDetail;
+  }
+
+  async update(
+    id: number,
+    updateOrderDetailDto: UpdateOrderDetailDto,
+  ): Promise<OrderDetail> {
+    const orderDetail = await this.findOne(id);
+
+    // Update fields
     Object.assign(orderDetail, updateOrderDetailDto);
+
+    // If inventory item ID is provided, update the relationship
+    if (updateOrderDetailDto.inventoryItemId) {
+      const inventoryItem = await this.inventoryItemRepository.findOne({
+        where: { id: updateOrderDetailDto.inventoryItemId },
+      });
+
+      if (!inventoryItem) {
+        throw new NotFoundException(
+          `Inventory item with ID ${updateOrderDetailDto.inventoryItemId} not found`,
+        );
+      }
+
+      orderDetail.inventoryItem = inventoryItem;
+    }
+
+    // Recalculate total
+    orderDetail.calculateTotalPrice();
+
     return this.orderDetailRepository.save(orderDetail);
   }
 
-  remove(id: number) {
-    return this.orderDetailRepository.delete(id);
+  async remove(id: number): Promise<void> {
+    const result = await this.orderDetailRepository.delete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`Order detail with ID ${id} not found`);
+    }
   }
 }

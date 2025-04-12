@@ -6,6 +6,7 @@ import { UpdateStockcheckRecordDto } from './dto/update-stockcheck-record.dto';
 import { StockcheckRecord } from './entities/stockcheck-record.entity';
 import { StockcheckDetail } from 'src/stockcheck-detail/entities/stockcheck-detail.entity';
 import { InventoryItem } from 'src/inventory-items/entities/inventory-item.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class StockcheckRecordService {
@@ -18,6 +19,9 @@ export class StockcheckRecordService {
 
     @InjectRepository(InventoryItem)
     private inventoryItemRepository: Repository<InventoryItem>,
+
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async create(createStockcheckRecordDto: CreateStockcheckRecordDto) {
@@ -34,12 +38,24 @@ export class StockcheckRecordService {
       }
     }
 
+    // Find the user
+    const user = await this.userRepository.findOne({
+      where: { id: createStockcheckRecordDto.userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        `User with id ${createStockcheckRecordDto.userId} not found.`,
+      );
+    }
+
     // Create new stockcheck record
     const stockcheckRecord = this.stockcheckRecordRepository.create({
       checkDate: createStockcheckRecordDto.checkDate,
       staffName: createStockcheckRecordDto.staffName,
       note: createStockcheckRecordDto.note,
       stockcheckDetails: [],
+      user: user, // ตั้งค่า user จาก userId ที่รับมา
     });
 
     // Save the stockcheck record first to get an ID
@@ -96,7 +112,11 @@ export class StockcheckRecordService {
 
   async findAll() {
     return this.stockcheckRecordRepository.find({
-      relations: ['stockcheckDetails', 'stockcheckDetails.inventoryitem'],
+      relations: [
+        'stockcheckDetails',
+        'stockcheckDetails.inventoryitem',
+        'user',
+      ],
       order: { checkDate: 'DESC' },
     });
   }
@@ -104,7 +124,11 @@ export class StockcheckRecordService {
   async findOne(id: number) {
     const record = await this.stockcheckRecordRepository.findOne({
       where: { id },
-      relations: ['stockcheckDetails', 'stockcheckDetails.inventoryitem'],
+      relations: [
+        'stockcheckDetails',
+        'stockcheckDetails.inventoryitem',
+        'user',
+      ],
     });
 
     if (!record) {
@@ -131,6 +155,21 @@ export class StockcheckRecordService {
 
     if (updateStockcheckRecordDto.note !== undefined) {
       stockcheckRecord.note = updateStockcheckRecordDto.note;
+    }
+
+    // Update user if userId is provided
+    if (updateStockcheckRecordDto.userId) {
+      const user = await this.userRepository.findOne({
+        where: { id: updateStockcheckRecordDto.userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException(
+          `User with id ${updateStockcheckRecordDto.userId} not found.`,
+        );
+      }
+
+      stockcheckRecord.user = user;
     }
 
     return this.stockcheckRecordRepository.save(stockcheckRecord);

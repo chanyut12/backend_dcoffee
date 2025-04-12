@@ -28,7 +28,11 @@ import { ProductsModule } from './products/products.module';
 import { Product } from './products/entities/product.entity';
 import { OrderRecordModule } from './order-record/order-record.module';
 import { StockcheckRecord } from './stockcheck-record/entities/stockcheck-record.entity';
-
+import { CartItemModule } from './cart-item/cart-item.module';
+import { CartItem } from './cart-item/entities/cart-item.entity';
+import { OrderRecord } from './order-record/entities/order-record.entity';
+import { UsageDetailModule } from './usage-detail/usage-detail.module';
+import { UsageRecordModule } from './usage-record/usage-record.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -56,6 +60,8 @@ import { StockcheckRecord } from './stockcheck-record/entities/stockcheck-record
         StockcheckRecord,
         OrderDetail,
         Product,
+        OrderRecord,
+        CartItem,
       ],
       synchronize: true,
     }),
@@ -69,6 +75,9 @@ import { StockcheckRecord } from './stockcheck-record/entities/stockcheck-record
     OrderDetailModule,
     ProductsModule,
     OrderRecordModule,
+    CartItemModule,
+    UsageDetailModule,
+    UsageRecordModule,
   ],
   controllers: [AppController],
   providers: [AppService],
