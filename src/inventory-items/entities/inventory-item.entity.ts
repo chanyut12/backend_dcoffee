@@ -1,6 +1,7 @@
 import { Category } from 'src/categories/entities/category.entity';
 import { OrderDetail } from 'src/order-detail/entities/order-detail.entity';
 import { StockcheckDetail } from 'src/stockcheck-detail/entities/stockcheck-detail.entity';
+import { UsageDetail } from 'src/usage-detail/entities/usage-detail.entity';
 import {
   Column,
   Entity,
@@ -48,4 +49,7 @@ export class InventoryItem {
 
   @OneToMany(() => OrderDetail, (orderDetail) => orderDetail.inventoryItem)
   orderDetails: OrderDetail;
+
+  @OneToMany(() => UsageDetail, (usageDetail) => usageDetail.inventoryItem)
+  usageDetails: UsageDetail[];
 }

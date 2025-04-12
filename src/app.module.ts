@@ -33,6 +33,8 @@ import { CartItem } from './cart-item/entities/cart-item.entity';
 import { OrderRecord } from './order-record/entities/order-record.entity';
 import { UsageDetailModule } from './usage-detail/usage-detail.module';
 import { UsageRecordModule } from './usage-record/usage-record.module';
+import { UsageDetail } from './usage-detail/entities/usage-detail.entity';
+import { UsageRecord } from './usage-record/entities/usage-record.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -62,6 +64,8 @@ import { UsageRecordModule } from './usage-record/usage-record.module';
         Product,
         OrderRecord,
         CartItem,
+        UsageRecord,
+        UsageDetail,
       ],
       synchronize: true,
     }),

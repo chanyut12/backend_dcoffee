@@ -6,9 +6,16 @@ import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { StockcheckRecord } from 'src/stockcheck-record/entities/stockcheck-record.entity';
 import { OrderRecord } from 'src/order-record/entities/order-record.entity';
+import { UsageRecord } from 'src/usage-record/entities/usage-record.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, StockcheckRecord, OrderRecord]),
+    TypeOrmModule.forFeature([
+      User,
+      Role,
+      StockcheckRecord,
+      OrderRecord,
+      UsageRecord,
+    ]),
   ],
   controllers: [UsersController],
   providers: [UsersService],
