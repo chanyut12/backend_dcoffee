@@ -35,6 +35,8 @@ import { UsageDetailModule } from './usage-detail/usage-detail.module';
 import { UsageRecordModule } from './usage-record/usage-record.module';
 import { UsageDetail } from './usage-detail/entities/usage-detail.entity';
 import { UsageRecord } from './usage-record/entities/usage-record.entity';
+import { InventoryReportModule } from './inventory-report/inventory-report.module';
+import { OrderReportModule } from './order-report/order-report.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -82,6 +84,8 @@ import { UsageRecord } from './usage-record/entities/usage-record.entity';
     CartItemModule,
     UsageDetailModule,
     UsageRecordModule,
+    InventoryReportModule,
+    OrderReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
